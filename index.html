@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -100,6 +99,414 @@
             <div class="bg-slate-900 p-5 rounded-2xl border border-emerald-500/20 shadow-lg">
                 <p class="text-slate-400 text-sm mb-1">إجمالي الإيداع (لك)</p>
                 <h3 class="text-2xl font-bold text-emerald-400" dir="ltr"><span id="totalIn">0</span> <span class="text-sm">ج.م</span></h3>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
+                <p class="text-slate-400 text-sm mb-1">إجمالي السحب (عليك)</p>
+                <h3 class="text-2xl font-bold text-rose-400" dir="ltr"><span id="totalOut">0</span> <span class="text-sm">ج.م</span></h3>
+            </div>
+        </div>
+
+        <!-- People Section -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+            <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-800/50">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-users text-indigo-400"></i> الأشخاص
+                </h2>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="ابحث..." class="flex-1 bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:border-indigo-500">
+                    <button onclick="toggleModal('userModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-indigo-600/20 shrink-0">
+                        <i class="fa-solid fa-plus"></i> إضافة
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 min-h-[300px]">
+                <div id="usersList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic Users -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add Person -->
+    <div id="userModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-700 scale-95 transition-transform duration-300" id="userModalContent">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-plus text-indigo-400 ml-1"></i> إضافة شخص</h3>
+                <button onclick="toggleModal('userModal')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveUser(event)">
+                <input type="text" id="userNameInput" required class="w-full bg-slate-950 text-white rounded-xl px-4 py-3 border border-slate-800 mb-4 focus:border-indigo-500 focus:outline-none" placeholder="الاسم رباعي أو جهة العمل">
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">حفظ</button>
+                    <button type="button" onclick="toggleModal('userModal')" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Transaction -->
+    <div id="transactionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-700 scale-95 transition-transform duration-300" id="transModalContent">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-money-bill-transfer text-emerald-400 ml-1"></i> تسجيل معاملة</h3>
+                <button onclick="toggleModal('transactionModal')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">لحساب: <span id="transUserName" class="text-indigo-400 font-bold"></span></p>
+            
+            <form onsubmit="saveTransaction(event)">
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="transType" value="in" class="peer sr-only" checked>
+                        <div class="text-center py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 peer-checked:bg-emerald-500/20 peer-checked:text-emerald-400 peer-checked:border-emerald-500 font-bold text-sm">
+                            إيداع (له)
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="transType" value="out" class="peer sr-only">
+                        <div class="text-center py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 peer-checked:bg-rose-500/20 peer-checked:text-rose-400 peer-checked:border-rose-500 font-bold text-sm">
+                            سحب (عليه)
+                        </div>
+                    </label>
+                </div>
+                <input type="number" id="transAmount" required min="1" step="0.5" class="w-full bg-slate-950 text-white rounded-xl px-4 py-3 border border-slate-800 mb-3 focus:border-indigo-500 focus:outline-none" dir="ltr" placeholder="المبلغ (جنيه)">
+                <input type="text" id="transNote" required class="w-full bg-slate-950 text-white rounded-xl px-4 py-3 border border-slate-800 mb-4 focus:border-indigo-500 focus:outline-none" placeholder="البيان (مثال: دفعة حساب)">
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">تسجيل</button>
+                    <button type="button" onclick="toggleModal('transactionModal')" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Invoice -->
+    <div id="invoiceModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm hidden items-start justify-center z-50 p-2 sm:p-4 overflow-y-auto opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl mt-4 sm:mt-10 mb-4 overflow-hidden scale-95 transition-transform duration-300 relative" id="invoiceModalContent">
+            <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center" data-html2canvas-ignore>
+                <h3 class="font-bold text-slate-800">كشف حساب</h3>
+                <div class="flex gap-2">
+                    <button onclick="downloadInvoice()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1"><i class="fa-solid fa-download"></i> صورة</button>
+                    <button onclick="toggleModal('invoiceModal')" class="bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="printableInvoice" class="p-4 sm:p-8 bg-white text-slate-900">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-black text-slate-800">كشف حساب</h2>
+                    <p class="text-sm text-slate-500" id="invoiceDate"></p>
+                </div>
+                <div class="flex justify-between items-end border-b-2 border-slate-800 pb-2 mb-4">
+                    <div>
+                        <p class="text-xs text-slate-500">العميل</p>
+                        <h4 class="text-xl font-bold text-indigo-900" id="invUserName">---</h4>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-slate-500">الرصيد النهائي</p>
+                        <h4 class="text-xl font-bold" id="invTotalBalance" dir="ltr">0</h4>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-300">
+                                <th class="p-2">التاريخ</th>
+                                <th class="p-2">البيان</th>
+                                <th class="p-2 text-emerald-700">إيداع</th>
+                                <th class="p-2 text-rose-700">سحب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invTableBody"></tbody>
+                        <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-300">
+                            <tr>
+                                <td colspan="2" class="p-2">الإجمالي:</td>
+                                <td class="p-2 text-emerald-700" id="invTotalIn" dir="ltr">0</td>
+                                <td class="p-2 text-rose-700" id="invTotalOut" dir="ltr">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Colleague -->
+    <div id="colleagueModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-indigo-500/50 scale-95 transition-transform duration-300" id="colleagueModalContent">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-shield text-indigo-400 ml-1"></i> مستخدم فرعي</h3>
+                <button onclick="toggleModal('colleagueModal')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4 bg-slate-800 p-2 rounded-lg">أنشئ حساباً لموظفك. سيدخل ويرى نفس دفاتر حساباتك.</p>
+            <form onsubmit="saveColleague(event)">
+                <input type="email" id="colleagueEmail" required class="w-full bg-slate-950 text-white rounded-xl px-4 py-3 border border-slate-800 mb-3 focus:border-indigo-500 outline-none" dir="ltr" placeholder="إيميل الموظف الجديد">
+                <input type="password" id="colleaguePass" required minlength="6" class="w-full bg-slate-950 text-white rounded-xl px-4 py-3 border border-slate-800 mb-3 focus:border-indigo-500 outline-none" dir="ltr" placeholder="كلمة المرور">
+                <div id="colleagueMsg" class="text-sm mb-3 hidden text-center p-2 rounded-lg"></div>
+                <button type="submit" id="colleagueBtn" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-600/20 mb-2">إنشاء حساب الموظف</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjyqCnBR_57Cklb6hkVfk6epnmhNUHdNo",
+            authDomain: "ahmed-account-system.firebaseapp.com",
+            projectId: "ahmed-account-system",
+            storageBucket: "ahmed-account-system.firebasestorage.app",
+            messagingSenderId: "386617344783",
+            appId: "1:386617344783:web:00917fae8b7c9704a3f47a"
+        };
+        const appId = 'finance-app-v2';
+
+        let app, auth, db, secondaryApp, secondaryAuth;
+        let unsubscribe = null;
+        window.usersData = [];
+        window.selectedUserId = null;
+        window.workspaceId = null;
+        window.currentUserId = null;
+
+        // Init
+        window.onload = function() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                secondaryApp = initializeApp(firebaseConfig, "Secondary");
+                secondaryAuth = getAuth(secondaryApp);
+
+                onAuthStateChanged(auth, async (user) => {
+                    const screen = document.getElementById('authScreen');
+                    if (user) {
+                        window.currentUserId = user.uid;
+                        document.getElementById('userEmailDisplay').innerText = user.email;
+                        
+                        try {
+                            const wsRef = doc(db, 'artifacts', appId, 'users', user.uid, 'workspace', 'info');
+                            const wsDoc = await getDoc(wsRef);
+                            window.workspaceId = wsDoc.exists() ? wsDoc.data().adminUid : user.uid;
+                        } catch(e) { window.workspaceId = user.uid; }
+                        
+                        screen.classList.add('opacity-0');
+                        setTimeout(() => { screen.classList.add('hidden'); screen.classList.remove('flex'); }, 300);
+                        
+                        setupHeader();
+                        loadData();
+                    } else {
+                        window.currentUserId = null; window.workspaceId = null;
+                        screen.classList.remove('hidden'); screen.classList.add('flex');
+                        setTimeout(() => screen.classList.remove('opacity-0'), 10);
+                        if(unsubscribe) unsubscribe();
+                        document.getElementById('usersList').innerHTML = '';
+                    }
+                });
+            } catch(e) { console.error("Firebase init failed", e); }
+        };
+
+        // UI Modals
+        window.toggleModal = function(id) {
+            const modal = document.getElementById(id);
+            const content = modal.querySelector('div');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+            }
+        };
+
+        // Auth
+        window.loginUser = async function() {
+            const e = document.getElementById('authEmail').value, p = document.getElementById('authPass').value;
+            const err = document.getElementById('authError'), btn = document.getElementById('loginBtn');
+            if(!e || !p) return showErr("أدخل البيانات");
+            btn.innerText = "جاري..."; err.classList.add('hidden');
+            try { await signInWithEmailAndPassword(auth, e, p); btn.innerText = "تسجيل الدخول"; } 
+            catch(error) { showErr("البيانات خاطئة"); btn.innerText = "تسجيل الدخول"; }
+        };
+
+        window.registerUser = async function() {
+            const e = document.getElementById('authEmail').value, p = document.getElementById('authPass').value;
+            const err = document.getElementById('authError'), btn = document.getElementById('registerBtn');
+            if(!e || p.length < 6) return showErr("تأكد من البيانات (6 حروف عالأقل)");
+            btn.innerText = "جاري..."; err.classList.add('hidden');
+            try { await createUserWithEmailAndPassword(auth, e, p); btn.innerText = "إنشاء حساب جديد"; } 
+            catch(error) { showErr("هذا الحساب موجود بالفعل"); btn.innerText = "إنشاء حساب جديد"; }
+        };
+
+        window.logout = () => signOut(auth);
+        
+        function showErr(msg) {
+            const e = document.getElementById('authError');
+            e.innerText = msg; e.classList.remove('hidden');
+        }
+
+        // Header Actions (Sub-user)
+        function setupHeader() {
+            const div = document.getElementById('headerActions');
+            div.innerHTML = '';
+            if(window.currentUserId === window.workspaceId) {
+                div.innerHTML += `<button onclick="toggleModal('colleagueModal')" class="bg-indigo-900/50 text-indigo-300 text-xs px-2 py-1.5 rounded-lg border border-indigo-500/30"><i class="fa-solid fa-user-shield"></i> فرعي</button>`;
+            }
+            div.innerHTML += `<button onclick="logout()" class="bg-slate-800 text-rose-400 text-xs px-2 py-1.5 rounded-lg"><i class="fa-solid fa-power-off"></i> خروج</button>`;
+        }
+
+        // Sub User Creation
+        window.saveColleague = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('colleagueEmail').value, pass = document.getElementById('colleaguePass').value;
+            const msg = document.getElementById('colleagueMsg'), btn = document.getElementById('colleagueBtn');
+            btn.innerText = "جاري..."; msg.classList.add('hidden');
+            try {
+                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+                await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'workspace', 'info'), { adminUid: window.workspaceId });
+                await signOut(secondaryAuth);
+                msg.className = "text-sm mb-3 text-center p-2 rounded-lg bg-emerald-500/20 text-emerald-400";
+                msg.innerText = "تم الإنشاء بنجاح!"; msg.classList.remove('hidden');
+                document.getElementById('colleagueEmail').value = ''; document.getElementById('colleaguePass').value = '';
+            } catch(error) {
+                msg.className = "text-sm mb-3 text-center p-2 rounded-lg bg-rose-500/20 text-rose-400";
+                msg.innerText = "فشل: " + (error.code === 'auth/email-already-in-use' ? "الإيميل مستخدم" : "خطأ بالبيانات");
+                msg.classList.remove('hidden');
+            }
+            btn.innerText = "إنشاء حساب الموظف";
+        };
+
+        // Data Management
+        function loadData() {
+            if(unsubscribe) unsubscribe();
+            unsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'users', window.workspaceId, 'people'), (snap) => {
+                window.usersData = [];
+                snap.forEach(d => window.usersData.push(d.data()));
+                renderUI();
+            });
+        }
+
+        window.saveUser = async function(e) {
+            e.preventDefault();
+            const n = document.getElementById('userNameInput').value.trim();
+            if(!n) return;
+            const person = { id: 'usr_'+Date.now(), name: n, date: new Date().toISOString(), tx: [] };
+            await setDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', person.id), person);
+            document.getElementById('userNameInput').value = '';
+            toggleModal('userModal');
+        };
+
+        window.openTx = function(id, name) {
+            window.selectedUserId = id;
+            document.getElementById('transUserName').innerText = name;
+            document.getElementById('transAmount').value = ''; document.getElementById('transNote').value = '';
+            toggleModal('transactionModal');
+        };
+
+        window.saveTransaction = async function(e) {
+            e.preventDefault();
+            const person = window.usersData.find(u => u.id === window.selectedUserId);
+            if(!person) return;
+            const t = document.querySelector('input[name="transType"]:checked').value;
+            const a = parseFloat(document.getElementById('transAmount').value);
+            const n = document.getElementById('transNote').value;
+            person.tx.push({ id: 'tx_'+Date.now(), type: t, amt: a, note: n, date: new Date().toISOString() });
+            await setDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', person.id), person);
+            toggleModal('transactionModal');
+        };
+
+        window.deleteUser = async function(id) {
+            if(confirm("هل أنت متأكد من الحذف النهائي؟")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', id));
+            }
+        };
+
+        // Render & Invoice
+        window.filterUsers = renderUI;
+
+        function renderUI() {
+            let tIn = 0, tOut = 0;
+            const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+            const list = document.getElementById('usersList'); list.innerHTML = '';
+            
+            const filtered = window.usersData.filter(u => u.name.toLowerCase().includes(query));
+            if(filtered.length === 0) {
+                list.innerHTML = `<div class="col-span-full text-center text-slate-500 py-8">لا يوجد أشخاص</div>`;
+            }
+
+            filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(u => {
+                let uIn = 0, uOut = 0;
+                u.tx.forEach(x => { if(x.type==='in') { uIn+=x.amt; tIn+=x.amt; } else { uOut+=x.amt; tOut+=x.amt; } });
+                const net = uIn - uOut;
+                
+                let sHtml = net > 0 ? `<span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded text-xs">له ${net.toLocaleString()}</span>` :
+                            net < 0 ? `<span class="text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded text-xs">عليه ${Math.abs(net).toLocaleString()}</span>` :
+                            `<span class="text-slate-400 bg-slate-800 px-2 py-0.5 rounded text-xs">مُخالص</span>`;
+
+                list.innerHTML += `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 relative group">
+                        <div class="flex justify-between items-start mb-3">
+                            <div><h3 class="font-bold text-white">${u.name}</h3><p class="text-[10px] text-slate-500">${u.tx.length} معاملة</p></div>
+                            ${sHtml}
+                        </div>
+                        <div class="flex gap-1.5 mt-4">
+                            <button onclick="openTx('${u.id}', '${u.name}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-plus"></i> معاملة</button>
+                            <button onclick="openInvoice('${u.id}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-file-lines"></i> كشف</button>
+                            <button onclick="deleteUser('${u.id}')" class="bg-rose-900/30 text-rose-500 px-3 rounded-lg hover:bg-rose-900/50"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+            
+            document.getElementById('totalIn').innerText = tIn.toLocaleString();
+            document.getElementById('totalOut').innerText = tOut.toLocaleString();
+            document.getElementById('totalBalance').innerText = Math.abs(tIn - tOut).toLocaleString();
+        }
+
+        window.openInvoice = function(id) {
+            const u = window.usersData.find(x => x.id === id); if(!u) return;
+            document.getElementById('invUserName').innerText = u.name;
+            document.getElementById('invoiceDate').innerText = new Date().toLocaleDateString('ar-EG');
+            
+            let html = '', uIn = 0, uOut = 0;
+            const sorted = [...u.tx].sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            sorted.forEach(t => {
+                if(t.type==='in') uIn+=t.amt; else uOut+=t.amt;
+                html += `<tr class="border-b border-slate-100"><td class="p-2">${new Date(t.date).toLocaleDateString()}</td><td class="p-2">${t.note}</td><td class="p-2 text-emerald-600" dir="ltr">${t.type==='in'?t.amt.toLocaleString():'-'}</td><td class="p-2 text-rose-600" dir="ltr">${t.type==='out'?t.amt.toLocaleString():'-'}</td></tr>`;
+            });
+            
+            document.getElementById('invTableBody').innerHTML = html || `<tr><td colspan="4" class="text-center p-4">لا توجد معاملات</td></tr>`;
+            document.getElementById('invTotalIn').innerText = uIn.toLocaleString(); document.getElementById('invTotalOut').innerText = uOut.toLocaleString();
+            
+            const net = uIn - uOut, el = document.getElementById('invTotalBalance');
+            if(net > 0) { el.innerText = net.toLocaleString() + ' له'; el.className = 'text-xl font-bold text-emerald-600'; }
+            else if(net < 0) { el.innerText = Math.abs(net).toLocaleString() + ' عليه'; el.className = 'text-xl font-bold text-rose-600'; }
+            else { el.innerText = '0'; el.className = 'text-xl font-bold text-slate-700'; }
+            
+            toggleModal('invoiceModal');
+        };
+
+        window.downloadInvoice = function() {
+            const el = document.getElementById('printableInvoice');
+            html2canvas(el, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+                const a = document.createElement('a'); a.download = `كشف_${document.getElementById('invUserName').innerText}.png`;
+                a.href = canvas.toDataURL('image/png'); a.click();
+            });
+        };
+
+        // Service Worker for App Installation
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch", (e) => {});')
+              .then(reg => console.log('SW registered'))
+              .catch(err => console.log('SW error', err));
+          });
+        }
+    </script>
+</body>
+</html>
+
+```
             </div>
             <div class="bg-slate-900 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
                 <p class="text-slate-400 text-sm mb-1">إجمالي السحب (عليك)</p>
