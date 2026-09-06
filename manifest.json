@@ -9,6 +9,12 @@
 "icons": [
 {
 "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/OOjs_UI_icon_wallet-ltr.svg/512px-OOjs_UI_icon_wallet-ltr.svg.png",
+"sizes": "192x192",
+"type": "image/png",
+"purpose": "any maskable"
+},
+{
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/OOjs_UI_icon_wallet-ltr.svg/512px-OOjs_UI_icon_wallet-ltr.svg.png",
 "sizes": "512x512",
 "type": "image/png",
 "purpose": "any maskable"
