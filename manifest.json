@@ -8,9 +8,10 @@
 "orientation": "portrait",
 "icons": [
 {
-"src": "Png.6020687",
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/OOjs_UI_icon_wallet-ltr.svg/512px-OOjs_UI_icon_wallet-ltr.svg.png",
 "sizes": "512x512",
-"type": "image/png"
+"type": "image/png",
+"purpose": "any maskable"
 }
 ]
 }
