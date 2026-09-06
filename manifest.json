@@ -1,18 +1,16 @@
 {
-  "name": "نظام المحاسبة المالي",
-  "short_name": "حساباتي",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23ffffff' d='M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-224c0-35.3-28.7-64-64-64L80 192c-8.8 0-16-7.2-16-16s7.2-16 16-16l368 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L64 32zM416 272a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'/%3E%3C/svg%3E",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
-      "purpose": "any maskable"
-    }
-  ]
+"name": "نظام المحاسبة المالي",
+"short_name": "حساباتي",
+"start_url": "./index.html",
+"display": "standalone",
+"background_color": "#0f172a",
+"theme_color": "#4f46e5",
+"orientation": "portrait",
+"icons": [
+{
+"src": "Png.6020687",
+"sizes": "512x512",
+"type": "image/png"
 }
-
+]
+}
