@@ -1,367 +1,242 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
-    <title>نظام المحاسبة الاحترافي</title>
-    
-    <!-- PWA Settings -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Tailwind CSS -->
+    <title>نظام المحاسبة المالي</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        body { 
-            font-family: 'Cairo', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-            background-color: #020617; /* Very dark slate */
-            color: #f8fafc;
-        }
-        /* Hide scrollbar for clean mobile look */
-        ::-webkit-scrollbar { display: none; }
+        body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { display: none; } /* Hide scrollbar for mobile feel */
+        .glass-panel { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); }
+        .skeleton { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         
         /* Bottom Sheet Animation */
         .bottom-sheet { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .bottom-sheet.open { transform: translateY(0); }
         
-        /* Overlay Animation */
-        .overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .overlay.open { opacity: 1; pointer-events: auto; }
-
-        /* Skeleton Loading Animation */
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-        .skeleton {
-            background: #1e293b;
-            background-image: linear-gradient(90deg, #1e293b 0px, #334155 40px, #1e293b 80px);
-            background-size: 1000px 100%;
-            animation: shimmer 2s infinite linear;
-        }
-        
         /* Toast Animation */
         .toast { transform: translateY(-100%); opacity: 0; transition: all 0.3s ease; }
         .toast.show { transform: translateY(0); opacity: 1; }
+        
+        /* Nav active state */
+        .nav-item.active { color: #818cf8; }
+        .nav-item.active .nav-icon { transform: translateY(-4px); background: rgba(99, 102, 241, 0.1); border-radius: 12px; padding: 4px 12px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative pb-32"> <!-- Increased padding bottom for raised nav -->
+<body class="bg-[#0b1120] text-slate-200 min-h-screen pb-24"> <!-- pb-24 for bottom nav clearance -->
 
-    <!-- Global Toast Container -->
-    <div id="toastContainer" class="fixed top-4 left-0 right-0 z-[100] flex justify-center pointer-events-none px-4"></div>
-
-    <!-- Auth Screens -->
-    <div id="authScreen" class="fixed inset-0 bg-slate-950 z-[90] flex items-center justify-center p-4">
-        <div class="bg-slate-900 p-8 rounded-[2rem] shadow-2xl border border-slate-800 w-full max-w-md">
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-wallet text-4xl text-white"></i>
-                </div>
-                <h2 class="text-2xl font-black text-white mb-1">حساباتي ٢.٠</h2>
-                <p class="text-slate-400 text-sm">تسجيل الدخول للنظام الآلي</p>
-            </div>
-            
-            <form id="authForm" onsubmit="event.preventDefault();" class="space-y-4">
-                <div class="bg-slate-950 rounded-2xl border border-slate-800 p-2 flex items-center">
-                    <i class="fa-solid fa-envelope text-slate-500 mx-3"></i>
-                    <input type="email" id="authEmail" required class="w-full bg-transparent text-white py-2 focus:outline-none" dir="ltr" placeholder="البريد الإلكتروني">
-                </div>
-                <div class="bg-slate-950 rounded-2xl border border-slate-800 p-2 flex items-center">
-                    <i class="fa-solid fa-lock text-slate-500 mx-3"></i>
-                    <input type="password" id="authPass" required class="w-full bg-transparent text-white py-2 focus:outline-none" dir="ltr" placeholder="كلمة المرور">
-                </div>
-                
-                <div id="authError" class="text-rose-400 text-sm hidden text-center bg-rose-500/10 p-2 rounded-xl"></div>
-                
-                <div class="pt-4 flex flex-col gap-3">
-                    <button type="button" onclick="loginUser()" id="loginBtn" class="w-full bg-indigo-600 active:bg-indigo-700 text-white py-3.5 rounded-2xl transition-colors font-bold shadow-lg shadow-indigo-600/30">
-                        تسجيل الدخول
-                    </button>
-                    <button type="button" onclick="registerUser()" id="registerBtn" class="w-full bg-slate-800 active:bg-slate-700 text-slate-300 py-3.5 rounded-2xl transition-colors font-bold border border-slate-700">
-                        إنشاء حساب جديد
-                    </button>
-                </div>
-            </form>
+    <!-- Global Toast Notification -->
+    <div id="toast" class="toast fixed top-4 left-4 right-4 z-[200] flex justify-center pointer-events-none">
+        <div class="bg-emerald-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 font-medium text-sm flex items-center gap-3">
+            <i class="fa-solid fa-circle-check text-lg"></i>
+            <span id="toastMsg">تم بنجاح</span>
         </div>
     </div>
 
     <!-- Top App Bar -->
-    <header class="bg-slate-900/90 backdrop-blur-lg sticky top-0 z-40 px-5 py-4 border-b border-slate-800 flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-black text-white bg-clip-text text-transparent bg-gradient-to-l from-indigo-400 to-purple-400">نظام المحاسبة</h1>
-            <p class="text-[10px] text-slate-400 font-medium" id="syncStatus"><i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1 animate-pulse"></i> متصل بالسحابة</p>
-        </div>
-        <div class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
-            <i class="fa-solid fa-user text-slate-300"></i>
+    <header class="glass-panel sticky top-0 z-40 px-4 py-4 border-b border-slate-800 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-wallet text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-tight">نظام المحاسبة</h1>
+                    <p class="text-[10px] text-emerald-400 font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> متصل بالسحابة</p>
+                </div>
+            </div>
+            <button onclick="window.logout()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors">
+                <i class="fa-solid fa-user"></i>
+            </button>
         </div>
     </header>
 
-    <!-- VIEW: Home (Dashboard) -->
-    <main id="homeView" class="view-section flex-1 px-4 py-6 max-w-lg mx-auto w-full block">
-        <!-- Stats Card -->
-        <div class="bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-3xl p-6 mb-6 shadow-xl border border-indigo-500/20 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
-            <p class="text-slate-300 text-sm font-semibold mb-1">الرصيد الصافي الإجمالي</p>
-            <h2 class="text-4xl font-black text-white mb-4" dir="ltr">
-                <span id="totalBalance">0</span> <span class="text-lg text-indigo-300">ج.م</span>
-            </h2>
-            <div class="flex gap-4 border-t border-white/10 pt-4">
-                <div class="flex-1">
-                    <p class="text-[11px] text-emerald-400/80 mb-1"><i class="fa-solid fa-arrow-trend-up"></i> إجمالي الإيداع (لك)</p>
-                    <p class="text-lg font-bold text-emerald-400" id="totalIn" dir="ltr">0</p>
+    <!-- Main Content -->
+    <main class="p-4 space-y-6">
+        
+        <!-- Premium Dashboard Card -->
+        <div class="bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-3xl p-6 border border-indigo-500/20 shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl"></div>
+            
+            <p class="text-slate-400 text-sm font-medium mb-2 relative z-10">الرصيد الصافي الإجمالي</p>
+            <h3 class="text-4xl font-black text-white flex items-baseline gap-2 mb-6 relative z-10" dir="ltr">
+                <span id="totalBalance">0</span> <span class="text-xl text-indigo-400 font-bold">ج.م</span>
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-4 border-t border-slate-700/50 pt-4 relative z-10">
+                <div>
+                    <p class="text-emerald-400 text-xs font-bold mb-1"><i class="fa-solid fa-arrow-trend-up"></i> إجمالي الإيداع (لك)</p>
+                    <p class="text-white font-semibold text-lg" id="totalIn" dir="ltr">0</p>
                 </div>
-                <div class="w-px bg-white/10"></div>
-                <div class="flex-1">
-                    <p class="text-[11px] text-rose-400/80 mb-1"><i class="fa-solid fa-arrow-trend-down"></i> إجمالي السحب (عليك)</p>
-                    <p class="text-lg font-bold text-rose-400" id="totalOut" dir="ltr">0</p>
+                <div class="border-r border-slate-700/50 pr-4">
+                    <p class="text-rose-400 text-xs font-bold mb-1"><i class="fa-solid fa-arrow-trend-down"></i> إجمالي السحب (عليك)</p>
+                    <p class="text-white font-semibold text-lg" id="totalOut" dir="ltr">0</p>
                 </div>
             </div>
         </div>
 
         <!-- Search & Filter -->
-        <div class="mb-4 space-y-3">
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 flex items-center p-1 shadow-sm">
-                <i class="fa-solid fa-magnifying-glass text-slate-500 mr-3 ml-2"></i>
-                <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="ابحث عن عميل..." class="w-full bg-transparent text-white py-2.5 focus:outline-none text-sm">
+        <div class="space-y-3">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute right-4 top-3.5 text-slate-500"></i>
+                <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="ابحث عن عميل..." class="w-full bg-slate-900 border border-slate-800 text-white rounded-2xl pr-12 pl-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors shadow-inner text-sm">
             </div>
             
-            <div class="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                <button onclick="setFilter('all')" id="flt-all" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white">الكل</button>
-                <button onclick="setFilter('creditor')" id="flt-creditor" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">لك أموال</button>
-                <button onclick="setFilter('debtor')" id="flt-debtor" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">عليك أموال</button>
-                <button onclick="setFilter('settled')" id="flt-settled" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">مُخالص</button>
+            <div class="flex gap-2 overflow-x-auto pb-1 hide-scroll">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn active bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors">الكل</button>
+                <button onclick="setFilter('in')" id="filter-in" class="filter-btn bg-slate-800 text-slate-300 px-5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors">لك أموال</button>
+                <button onclick="setFilter('out')" id="filter-out" class="filter-btn bg-slate-800 text-slate-300 px-5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors">عليك أموال</button>
+                <button onclick="setFilter('zero')" id="filter-zero" class="filter-btn bg-slate-800 text-slate-300 px-5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors">مُخالص</button>
             </div>
         </div>
 
         <!-- Users List -->
-        <div id="usersList" class="space-y-3 mb-10">
-            <!-- Skeletons initial -->
-            <div class="skeleton h-24 rounded-2xl w-full"></div>
-            <div class="skeleton h-24 rounded-2xl w-full"></div>
-            <div class="skeleton h-24 rounded-2xl w-full"></div>
-        </div>
-    </main>
-
-    <!-- VIEW: History -->
-    <main id="historyView" class="view-section flex-1 px-4 py-6 max-w-lg mx-auto w-full hidden">
-        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> السجل العام</h2>
-        <div class="bg-slate-900 rounded-3xl border border-slate-800 p-4 shadow-lg">
-            <div id="globalHistoryList" class="space-y-0 relative before:absolute before:inset-y-0 before:right-6 before:w-px before:bg-slate-800">
-                <!-- History Items -->
-                <div class="text-center text-slate-500 text-sm py-10">جاري التحميل...</div>
+        <div id="usersList" class="space-y-3 pb-6">
+            <!-- Skeleton Loader -->
+            <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex gap-4 animate-pulse">
+                <div class="w-12 h-12 rounded-full skeleton"></div>
+                <div class="flex-1 space-y-2 py-1">
+                    <div class="h-4 skeleton rounded w-1/2"></div>
+                    <div class="h-3 skeleton rounded w-1/4"></div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- VIEW: Settings -->
-    <main id="settingsView" class="view-section flex-1 px-4 py-6 max-w-lg mx-auto w-full hidden">
-        <h2 class="text-xl font-bold text-white mb-6">الإعدادات</h2>
-        
-        <div class="bg-slate-900 rounded-3xl border border-slate-800 p-2 shadow-lg mb-4">
-            <div class="p-4 border-b border-slate-800">
-                <p class="text-xs text-slate-500 mb-1">الحساب الحالي</p>
-                <p class="text-sm font-bold text-white" id="settingEmail">...</p>
-            </div>
-            
-            <div id="adminSettingsPanel" class="hidden">
-                <button onclick="openSheet('colleagueSheet')" class="w-full flex items-center justify-between p-4 text-slate-300 hover:bg-slate-800 transition-colors rounded-xl">
-                    <span class="flex items-center gap-3"><i class="fa-solid fa-user-shield text-indigo-400 w-5"></i> إضافة موظف (مستخدم فرعي)</span>
-                    <i class="fa-solid fa-chevron-left text-xs text-slate-500"></i>
-                </button>
-            </div>
-            
-            <button onclick="logout()" class="w-full flex items-center justify-between p-4 text-rose-400 hover:bg-rose-500/10 transition-colors rounded-xl mt-1">
-                <span class="flex items-center gap-3 font-bold"><i class="fa-solid fa-right-from-bracket w-5"></i> تسجيل الخروج</span>
-            </button>
-        </div>
-        <p class="text-center text-xs text-slate-600">الإصدار 2.0 (Mobile First)</p>
-    </main>
-
-    <!-- Bottom Navigation Bar (Raised for Android navigation compatibility) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 pb-6 pt-3 z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <div class="max-w-lg mx-auto flex justify-between items-center px-6 relative">
-            <button onclick="switchView('home')" id="nav-home" class="nav-btn active flex-1 flex flex-col items-center p-2 text-indigo-400 transition-colors">
-                <i class="fa-solid fa-house text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">الرئيسية</span>
+    <!-- Bottom Navigation Bar (Elevated for Android Nav bar clearance) -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-800 z-40 pb-6 pt-2 px-6">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <button class="nav-item active flex flex-col items-center gap-1 text-slate-400 w-16 transition-all">
+                <div class="nav-icon transition-all duration-300"><i class="fa-solid fa-house text-xl"></i></div>
+                <span class="text-[10px] font-bold mt-1">الرئيسية</span>
             </button>
             
-            <!-- FAB (Floating Action Button) for Add Person -->
-            <div class="relative -top-8">
-                <button onclick="openSheet('addPersonSheet')" class="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.5)] text-white text-2xl active:scale-95 transition-transform border-4 border-slate-900">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
-            </div>
-            
-            <button onclick="switchView('history')" id="nav-history" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition-colors">
-                <i class="fa-solid fa-clock-rotate-left text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">السجل</span>
+            <!-- Voice AI FAB (Floating Action Button) -->
+            <button onclick="startVoiceAssistant()" class="relative -top-6 w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(79,70,229,0.5)] text-white text-2xl border-4 border-[#0b1120] transform transition-transform active:scale-95">
+                <i class="fa-solid fa-microphone"></i>
             </button>
 
-            <button onclick="switchView('settings')" id="nav-settings" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition-colors absolute left-4 top-2">
-                <i class="fa-solid fa-gear text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">إعدادات</span>
+            <button onclick="showToast('السجل قيد التطوير في الإصدار القادم', 'info')" class="nav-item flex flex-col items-center gap-1 text-slate-400 w-16 transition-all">
+                <div class="nav-icon transition-all duration-300"><i class="fa-solid fa-clock-rotate-left text-xl"></i></div>
+                <span class="text-[10px] font-bold mt-1">السجل</span>
             </button>
-             <div class="flex-1"></div>
         </div>
     </nav>
 
-    <!-- OVERLAYS & BOTTOM SHEETS -->
-    <div id="appOverlay" class="overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onclick="closeAllSheets()"></div>
-
-    <!-- Sheet: Add Person -->
-    <div id="addPersonSheet" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 rounded-t-[2rem] border-t border-slate-700 p-6 max-w-lg mx-auto pb-12">
-        <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6"></div>
-        <h3 class="text-xl font-bold text-white mb-6">إضافة شخص أو جهة</h3>
-        <form onsubmit="saveUser(event)">
-            <div class="bg-slate-950 rounded-2xl border border-slate-800 p-1 mb-6">
-                <input type="text" id="userNameInput" required class="w-full bg-transparent text-white px-4 py-3 focus:outline-none" placeholder="الاسم رباعي أو اسم الشركة">
-            </div>
-            <button type="submit" class="w-full bg-indigo-600 active:bg-indigo-700 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-600/20 text-lg">حفظ الشخص</button>
-        </form>
-    </div>
-
-    <!-- Sheet: Add Transaction -->
-    <div id="addTransSheet" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 rounded-t-[2rem] border-t border-slate-700 p-6 max-w-lg mx-auto pb-12">
-        <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4"></div>
-        <h3 class="text-xl font-bold text-white mb-1">معاملة جديدة</h3>
-        <p class="text-sm text-indigo-400 font-bold mb-6" id="transUserNameTitle">...</p>
-        
-        <form onsubmit="saveTransaction(event)">
-            <div class="flex gap-3 mb-5">
-                <label class="flex-1 cursor-pointer">
-                    <input type="radio" name="transType" value="in" class="peer sr-only" checked>
-                    <div class="text-center py-3 bg-slate-950 border border-slate-800 rounded-2xl text-slate-400 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-400 peer-checked:border-emerald-500 font-bold transition-all">
-                        <i class="fa-solid fa-arrow-down mr-1"></i> إيداع (له)
-                    </div>
-                </label>
-                <label class="flex-1 cursor-pointer">
-                    <input type="radio" name="transType" value="out" class="peer sr-only">
-                    <div class="text-center py-3 bg-slate-950 border border-slate-800 rounded-2xl text-slate-400 peer-checked:bg-rose-500/10 peer-checked:text-rose-400 peer-checked:border-rose-500 font-bold transition-all">
-                        <i class="fa-solid fa-arrow-up mr-1"></i> سحب (عليه)
-                    </div>
-                </label>
-            </div>
-            
-            <div class="bg-slate-950 rounded-2xl border border-slate-800 p-1 mb-4 flex items-center relative">
-                <span class="absolute right-4 text-slate-500 font-bold text-sm">ج.م</span>
-                <input type="number" id="transAmount" required min="1" step="0.01" class="w-full bg-transparent text-white pr-12 pl-4 py-3 focus:outline-none text-lg" dir="ltr" placeholder="0.00">
-            </div>
-            
-            <div class="bg-slate-950 rounded-2xl border border-slate-800 p-1 mb-6">
-                <input type="text" id="transNote" required class="w-full bg-transparent text-white px-4 py-3 focus:outline-none" placeholder="البيان (مثال: دفعة كاش)">
-            </div>
-            
-            <button type="submit" class="w-full bg-indigo-600 active:bg-indigo-700 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-600/20 text-lg">تسجيل المعاملة</button>
-        </form>
-    </div>
-
-    <!-- Sheet: Sub User -->
-    <div id="colleagueSheet" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 rounded-t-[2rem] border-t border-slate-700 p-6 max-w-lg mx-auto pb-12">
-        <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4"></div>
-        <h3 class="text-xl font-bold text-white mb-2">إضافة موظف</h3>
-        <p class="text-xs text-slate-400 mb-5 leading-relaxed">سيدخل الموظف بنفس الإيميل وكلمة المرور وسيرى هذا الدفتر.</p>
-        
-        <form onsubmit="saveColleague(event)">
-            <input type="email" id="collEmail" required class="w-full bg-slate-950 text-white px-4 py-3 rounded-2xl border border-slate-800 focus:outline-none mb-3" placeholder="البريد الإلكتروني" dir="ltr">
-            <input type="password" id="collPass" required minlength="6" class="w-full bg-slate-950 text-white px-4 py-3 rounded-2xl border border-slate-800 focus:outline-none mb-5" placeholder="كلمة المرور" dir="ltr">
-            <button type="submit" id="collBtn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-600/20">إنشاء حساب الموظف</button>
-        </form>
-    </div>
-
-    <!-- Full Screen Modal: Invoice -->
-    <div id="invoiceModal" class="fixed inset-0 bg-slate-900 z-[100] hidden flex-col transition-transform transform translate-y-full">
-        <!-- Header -->
-        <div class="bg-slate-950 px-4 py-3 flex justify-between items-center border-b border-slate-800" data-html2canvas-ignore>
-            <button onclick="closeInvoice()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h3 class="font-bold text-white">كشف حساب</h3>
-            <button onclick="downloadInvoice()" class="bg-indigo-600 px-4 py-2 rounded-xl text-white text-sm font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-                <i class="fa-solid fa-download"></i> صورة
-            </button>
+    <!-- Bottom Sheets -->
+    <!-- 1. Add User Sheet -->
+    <div id="userSheet" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeSheet('userSheet')"></div>
+        <div class="bottom-sheet absolute bottom-0 left-0 right-0 bg-slate-900 rounded-t-3xl border-t border-slate-700 p-6 pb-12">
+            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6"></div>
+            <h3 class="text-xl font-bold text-white mb-6"><i class="fa-solid fa-user-plus text-indigo-400 ml-2"></i>إضافة عميل جديد</h3>
+            <form onsubmit="saveUser(event)">
+                <input type="text" id="userNameInput" required class="w-full bg-slate-950 text-white rounded-2xl px-5 py-4 border border-slate-800 focus:border-indigo-500 transition-colors mb-4" placeholder="اسم العميل أو الجهة">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-transform">حفظ العميل</button>
+            </form>
         </div>
-        
-        <!-- Printable Area -->
-        <div class="flex-1 overflow-y-auto bg-slate-200">
-            <div id="printableInvoice" class="bg-white min-h-full p-6 text-slate-900 pb-20">
-                <div class="text-center mb-6 pb-4 border-b-2 border-slate-200">
-                    <h2 class="text-2xl font-black text-slate-800">كشف حساب تفصيلي</h2>
-                    <p class="text-sm text-slate-500 mt-1" id="invDate"></p>
+    </div>
+
+    <!-- 2. Add Transaction Sheet -->
+    <div id="transSheet" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeSheet('transSheet')"></div>
+        <div class="bottom-sheet absolute bottom-0 left-0 right-0 bg-slate-900 rounded-t-3xl border-t border-slate-700 p-6 pb-12">
+            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6"></div>
+            <h3 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-money-bill-wave text-emerald-400 ml-2"></i>تسجيل معاملة</h3>
+            <p class="text-slate-400 text-sm mb-6" id="transUserName">...</p>
+            
+            <form onsubmit="saveTransaction(event)">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="transType" value="in" class="peer sr-only" checked>
+                        <div class="text-center py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 font-bold transition-all"><i class="fa-solid fa-arrow-down mr-1"></i> إيداع (له)</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="transType" value="out" class="peer sr-only">
+                        <div class="text-center py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 peer-checked:bg-rose-500/20 peer-checked:border-rose-500 peer-checked:text-rose-400 font-bold transition-all"><i class="fa-solid fa-arrow-up mr-1"></i> سحب (عليه)</div>
+                    </label>
                 </div>
-                
-                <div class="flex justify-between items-end mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <div>
-                        <p class="text-xs text-slate-500 mb-1">العميل</p>
-                        <h4 class="text-xl font-bold text-indigo-900" id="invName">---</h4>
+                <div class="relative mb-4">
+                    <span class="absolute right-5 top-4 text-slate-500 font-bold">ج.م</span>
+                    <input type="number" id="transAmount" required min="1" step="0.01" class="w-full bg-slate-950 text-white rounded-2xl pr-14 pl-5 py-4 border border-slate-800 focus:border-indigo-500 transition-colors text-lg font-bold" dir="ltr" placeholder="0.00">
+                </div>
+                <input type="text" id="transNote" required class="w-full bg-slate-950 text-white rounded-2xl px-5 py-4 border border-slate-800 focus:border-indigo-500 transition-colors mb-6" placeholder="البيان (مثال: دفعة من الحساب)">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-transform">تسجيل</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Share/Screenshot Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[60] hidden flex-col items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onclick="closeShareModal()"></div>
+        <div class="relative z-10 w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl">
+            <!-- The Receipt to capture -->
+            <div id="receiptToCapture" class="p-6 bg-white relative">
+                <div class="text-center border-b-2 border-slate-100 pb-4 mb-4">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl"><i class="fa-solid fa-wallet"></i></div>
+                    <h2 class="text-xl font-black text-slate-800">كشف حساب مصغر</h2>
+                    <p class="text-xs text-slate-400" id="receiptDate"></p>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs text-slate-500 mb-1">العميل</p>
+                    <h3 class="text-lg font-bold text-indigo-900" id="receiptName">---</h3>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                        <p class="text-[10px] text-emerald-600 font-bold mb-1">إجمالي له</p>
+                        <p class="text-sm font-bold text-slate-800" id="receiptIn" dir="ltr">0</p>
                     </div>
-                    <div class="text-left">
-                        <p class="text-xs text-slate-500 mb-1">الرصيد النهائي</p>
-                        <h4 class="text-xl font-bold" id="invBal" dir="ltr">0.00</h4>
+                    <div class="bg-rose-50 p-3 rounded-xl border border-rose-100">
+                        <p class="text-[10px] text-rose-600 font-bold mb-1">إجمالي عليه</p>
+                        <p class="text-sm font-bold text-slate-800" id="receiptOut" dir="ltr">0</p>
                     </div>
                 </div>
-
-                <table class="w-full text-right text-sm border-collapse">
-                    <thead>
-                        <tr class="bg-slate-800 text-white rounded-t-lg">
-                            <th class="p-2 font-semibold">التاريخ</th>
-                            <th class="p-2 font-semibold">البيان</th>
-                            <th class="p-2 font-semibold">إيداع</th>
-                            <th class="p-2 font-semibold">سحب</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invTbody" class="[&>*:nth-child(even)]:bg-slate-50">
-                    </tbody>
-                    <tfoot class="border-t-2 border-slate-800 font-bold bg-slate-100">
-                        <tr>
-                            <td colspan="2" class="p-3">الإجمالي:</td>
-                            <td class="p-3 text-emerald-700" id="invIn" dir="ltr">0</td>
-                            <td class="p-3 text-rose-700" id="invOut" dir="ltr">0</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="text-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs text-slate-500 mb-1">الرصيد الصافي</p>
+                    <h3 class="text-2xl font-black" id="receiptNet" dir="ltr">0</h3>
+                </div>
+            </div>
+            <!-- Actions -->
+            <div class="bg-slate-50 p-4 flex gap-3 border-t border-slate-200" data-html2canvas-ignore>
+                <button onclick="shareReceipt()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"><i class="fa-brands fa-whatsapp text-xl"></i> مشاركة</button>
+                <button onclick="downloadReceipt()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"><i class="fa-solid fa-download"></i> حفظ</button>
             </div>
         </div>
+        <button onclick="closeShareModal()" class="absolute top-6 right-6 text-white w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur z-20"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
-    <!-- Modal: Generated Image Preview -->
-    <div id="imagePreviewModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[110] hidden flex-col items-center justify-center p-4">
-        <div class="bg-slate-900 w-full max-w-sm rounded-3xl p-4 shadow-2xl border border-slate-700 flex flex-col items-center">
-            <div class="w-full flex justify-between items-center mb-4">
-                <h3 class="text-white font-bold">كشف الحساب المصغر</h3>
-                <button onclick="closeImagePreview()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div id="generatedImageContainer" class="w-full bg-white rounded-xl overflow-hidden mb-4 border border-slate-700 flex justify-center items-center min-h-[200px]">
-                <i class="fa-solid fa-circle-notch fa-spin text-slate-400 text-3xl"></i>
-            </div>
-            
-            <div class="w-full flex gap-3">
-                <button id="btnShareImage" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
-                    <i class="fa-brands fa-whatsapp text-xl"></i> مشاركة
-                </button>
-                <button id="btnDownloadImage" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
-                    <i class="fa-solid fa-download"></i> حفظ للصورة
-                </button>
+    <!-- Voice Assistant Overlay (AI) -->
+    <div id="voiceOverlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex-col items-center justify-center z-[110] transition-opacity">
+        <div class="relative w-40 h-40 flex items-center justify-center mb-8">
+            <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20"></div>
+            <div class="absolute inset-4 bg-purple-500 rounded-full animate-pulse opacity-40"></div>
+            <div class="relative w-24 h-24 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(79,70,229,0.8)]">
+                <i class="fa-solid fa-microphone-lines text-5xl text-white"></i>
             </div>
         </div>
+        <h3 class="text-3xl font-black text-white mb-4 tracking-wide text-center">المحاسب الآلي</h3>
+        <p id="voiceText" class="text-indigo-200 text-center px-8 text-lg font-medium leading-relaxed mb-12">أنا أستمع، قل مثلاً:<br>"سجل مية جنيه على أحمد"</p>
+        
+        <button id="stopVoiceBtn" onclick="stopRecordingAndProcess()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-8 py-4 rounded-full transition-colors font-bold shadow-lg shadow-rose-600/30 text-lg">
+            <i class="fa-solid fa-stop mr-2"></i> إنهاء التحليل
+        </button>
+        
+        <button onclick="closeVoiceAssistant()" class="mt-4 text-slate-400 hover:text-white px-6 py-3 font-medium">إلغاء</button>
     </div>
 
-    <!-- Core Logic & Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // IMPORTANT: Add your Firebase config here
         const firebaseConfig = {
             apiKey: "AIzaSyAjyqCnBR_57Cklb6hkVfk6epnmhNUHdNo",
             authDomain: "ahmed-account-system.firebaseapp.com",
@@ -370,455 +245,292 @@
             messagingSenderId: "386617344783",
             appId: "1:386617344783:web:00917fae8b7c9704a3f47a"
         };
-        const appId = 'finance-app';
 
-        let app, auth, db, secondaryApp, secondaryAuth;
-        let unsubscribe = null;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         
-        window.usersData = [];
-        window.currentUserId = null;
-        window.workspaceId = null;
-        window.selectedUserId = null;
-        window.currentFilter = 'all';
+        window.users = [];
+        let currentFilter = 'all';
 
-        // Initialize
-        window.onload = function() {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                secondaryApp = initializeApp(firebaseConfig, "Secondary");
-                secondaryAuth = getAuth(secondaryApp);
+        // Auto Anonymous Login for simplicity (since it's a personal app)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.userId = user.uid;
+                loadData();
+            } else {
+                signInAnonymously(auth).catch(console.error);
+            }
+        });
 
-                onAuthStateChanged(auth, async (user) => {
-                    const screen = document.getElementById('authScreen');
-                    if (user) {
-                        window.currentUserId = user.uid;
-                        document.getElementById('settingEmail').innerText = user.email;
-                        
-                        try {
-                            const wsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'workspace', 'info'));
-                            window.workspaceId = wsDoc.exists() ? wsDoc.data().adminUid : user.uid;
-                        } catch(e) { window.workspaceId = user.uid; }
-                        
-                        if(window.currentUserId === window.workspaceId) {
-                            document.getElementById('adminSettingsPanel').classList.remove('hidden');
-                        }
-                        
-                        screen.classList.add('hidden');
-                        loadData();
-                    } else {
-                        window.currentUserId = null; window.workspaceId = null;
-                        screen.classList.remove('hidden');
-                        if(unsubscribe) unsubscribe();
-                    }
-                });
-            } catch(e) { console.error("Firebase init failed", e); showToast("خطأ في الاتصال بالسيرفر", "error"); }
-        };
-
-        // UI Controls: Views
-        window.switchView = function(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(el => {
-                el.classList.remove('text-indigo-400');
-                el.classList.add('text-slate-500');
-            });
-            
-            document.getElementById(viewId + 'View').classList.remove('hidden');
-            document.getElementById('nav-' + viewId).classList.add('text-indigo-400');
-            document.getElementById('nav-' + viewId).classList.remove('text-slate-500');
-            
-            if(viewId === 'history') renderHistory();
-        };
-
-        // UI Controls: Bottom Sheets
-        window.openSheet = function(id) {
-            document.getElementById('appOverlay').classList.add('open');
-            document.getElementById(id).classList.add('open');
-        };
-        window.closeAllSheets = function() {
-            document.getElementById('appOverlay').classList.remove('open');
-            document.querySelectorAll('.bottom-sheet').forEach(el => el.classList.remove('open'));
-        };
-
-        // Custom Toast Notification
-        window.showToast = function(msg, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const color = type === 'success' ? 'bg-emerald-500/90' : 'bg-rose-500/90';
-            const icon = type === 'success' ? 'fa-check' : 'fa-triangle-exclamation';
-            
-            toast.className = `toast mt-2 flex items-center gap-3 px-4 py-3 rounded-full text-white font-bold text-sm shadow-xl backdrop-blur-md ${color}`;
-            toast.innerHTML = `<div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div> ${msg}`;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        };
-
-        // Auth Logic
-        window.loginUser = async function() {
-            const e = document.getElementById('authEmail').value, p = document.getElementById('authPass').value;
-            const err = document.getElementById('authError'), btn = document.getElementById('loginBtn');
-            if(!e || !p) { err.innerText = "أدخل البيانات"; err.classList.remove('hidden'); return; }
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`; err.classList.add('hidden');
-            try { await signInWithEmailAndPassword(auth, e, p); btn.innerText = "تسجيل الدخول"; } 
-            catch(error) { err.innerText = "البيانات خاطئة"; err.classList.remove('hidden'); btn.innerText = "تسجيل الدخول"; }
-        };
-
-        window.registerUser = async function() {
-            const e = document.getElementById('authEmail').value, p = document.getElementById('authPass').value;
-            const err = document.getElementById('authError'), btn = document.getElementById('registerBtn');
-            if(!e || p.length < 6) { err.innerText = "تأكد من البيانات (6 حروف عالأقل)"; err.classList.remove('hidden'); return; }
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`; err.classList.add('hidden');
-            try { await createUserWithEmailAndPassword(auth, e, p); btn.innerText = "إنشاء حساب جديد"; } 
-            catch(error) { err.innerText = "الحساب موجود مسبقاً"; err.classList.remove('hidden'); btn.innerText = "إنشاء حساب جديد"; }
-        };
-        
-        window.logout = () => signOut(auth);
-
-        window.saveColleague = async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('collEmail').value, pass = document.getElementById('collPass').value;
-            const btn = document.getElementById('collBtn');
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
-            try {
-                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
-                await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'workspace', 'info'), { adminUid: window.workspaceId });
-                await signOut(secondaryAuth);
-                showToast("تم إنشاء حساب الموظف بنجاح");
-                closeAllSheets();
-                e.target.reset();
-            } catch(error) { showToast("حدث خطأ، ربما الإيميل مستخدم", "error"); }
-            btn.innerText = "إنشاء حساب الموظف";
-        };
-
-        // Data Logic
         function loadData() {
-            if(unsubscribe) unsubscribe();
-            const ref = collection(db, 'artifacts', appId, 'users', window.workspaceId, 'people');
-            unsubscribe = onSnapshot(ref, (snap) => {
-                window.usersData = [];
-                snap.forEach(d => window.usersData.push(d.data()));
+            const ref = collection(db, 'users', window.userId, 'people');
+            onSnapshot(ref, (snapshot) => {
+                window.users = [];
+                snapshot.forEach(doc => window.users.push(doc.data()));
                 renderUI();
-                if(document.getElementById('historyView').classList.contains('hidden') === false) renderHistory();
             });
         }
 
+        // --- UI Rendering ---
+        function renderUI() {
+            let tIn = 0, tOut = 0;
+            window.users.forEach(u => u.transactions.forEach(t => { if(t.type==='in') tIn+=t.amount; else tOut+=t.amount; }));
+            
+            document.getElementById('totalIn').innerText = tIn.toLocaleString();
+            document.getElementById('totalOut').innerText = tOut.toLocaleString();
+            document.getElementById('totalBalance').innerText = Math.abs(tIn - tOut).toLocaleString();
+            
+            filterUsers(); // Re-render list
+        }
+
+        window.setFilter = function(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => { b.classList.remove('active', 'bg-indigo-600', 'text-white'); b.classList.add('bg-slate-800', 'text-slate-300'); });
+            const btn = document.getElementById(`filter-${f}`);
+            btn.classList.remove('bg-slate-800', 'text-slate-300');
+            btn.classList.add('active', 'bg-indigo-600', 'text-white');
+            filterUsers();
+        }
+
+        window.filterUsers = function() {
+            const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const list = document.getElementById('usersList');
+            list.innerHTML = '';
+            
+            let filtered = window.users.filter(u => u.name.toLowerCase().includes(query));
+            
+            // Add Floating "Add Person" Card as first item
+            list.innerHTML += `
+                <div onclick="openSheet('userSheet')" class="bg-slate-800/50 border border-indigo-500/30 border-dashed rounded-2xl p-4 flex items-center justify-center gap-3 text-indigo-400 font-bold cursor-pointer active:bg-slate-800 transition-colors">
+                    <div class="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center"><i class="fa-solid fa-plus"></i></div>
+                    إضافة عميل جديد
+                </div>
+            `;
+
+            filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(user => {
+                let uIn = 0, uOut = 0;
+                user.transactions.forEach(t => { if(t.type==='in') uIn+=t.amount; else uOut+=t.amount; });
+                const net = uIn - uOut;
+                
+                if(currentFilter === 'in' && net <= 0) return;
+                if(currentFilter === 'out' && net >= 0) return;
+                if(currentFilter === 'zero' && net !== 0) return;
+
+                let netHtml = net > 0 ? `<span class="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded text-xs">له ${Math.abs(net).toLocaleString()}</span>` : 
+                              net < 0 ? `<span class="text-rose-400 font-bold bg-rose-400/10 px-2 py-0.5 rounded text-xs">عليه ${Math.abs(net).toLocaleString()}</span>` : 
+                              `<span class="text-slate-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-xs">مُخالص</span>`;
+
+                list.innerHTML += `
+                    <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-sm relative">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-lg">${user.name.substring(0,1)}</div>
+                                <div>
+                                    <h3 class="text-white font-bold">${user.name}</h3>
+                                    <p class="text-xs text-slate-500">${user.transactions.length} معاملة مسجلة</p>
+                                </div>
+                            </div>
+                            <div class="text-left">${netHtml}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openTransSheet('${user.id}')" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> معاملة</button>
+                            <button onclick="alert('الكشف التفصيلي تحت التطوير')" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-sm font-bold border border-slate-700"><i class="fa-solid fa-receipt mr-1"></i> كشف</button>
+                            <button onclick="prepWhatsAppShare('${user.id}')" class="w-11 bg-green-500/10 text-green-500 border border-green-500/20 py-2.5 rounded-xl flex justify-center items-center"><i class="fa-brands fa-whatsapp text-lg"></i></button>
+                            <button onclick="deletePerson('${user.id}')" class="w-11 bg-rose-500/10 text-rose-500 border border-rose-500/20 py-2.5 rounded-xl flex justify-center items-center"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Actions ---
         window.saveUser = async function(e) {
             e.preventDefault();
             const name = document.getElementById('userNameInput').value.trim();
             if(!name) return;
-            const person = { id: 'usr_'+Date.now(), name: name, date: new Date().toISOString(), transactions: [] };
-            await setDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', person.id), person);
+            const id = 'u_' + Date.now();
+            await setDoc(doc(db, 'users', window.userId, 'people', id), { id, name, date: new Date().toISOString(), transactions: [] });
+            closeSheet('userSheet');
             document.getElementById('userNameInput').value = '';
-            closeAllSheets();
-            showToast(`تمت إضافة ${name} بنجاح`);
-        };
+            showToast('تمت إضافة العميل');
+        }
 
-        window.openAddTrans = function(id, name) {
+        window.openTransSheet = function(id) {
             window.selectedUserId = id;
-            document.getElementById('transUserNameTitle').innerText = name;
+            document.getElementById('transUserName').innerText = window.users.find(u=>u.id===id).name;
             document.getElementById('transAmount').value = '';
             document.getElementById('transNote').value = '';
-            openSheet('addTransSheet');
-        };
+            openSheet('transSheet');
+        }
 
         window.saveTransaction = async function(e) {
             e.preventDefault();
-            const user = window.usersData.find(u => u.id === window.selectedUserId);
+            const user = window.users.find(u => u.id === window.selectedUserId);
+            const amt = parseFloat(document.getElementById('transAmount').value);
+            if(!amt) return;
+            
+            user.transactions.push({
+                id: 't_'+Date.now(),
+                type: document.querySelector('input[name="transType"]:checked').value,
+                amount: amt,
+                note: document.getElementById('transNote').value,
+                date: new Date().toISOString()
+            });
+            await setDoc(doc(db, 'users', window.userId, 'people', user.id), user);
+            closeSheet('transSheet');
+            showToast('تم التسجيل بنجاح');
+        }
+
+        window.deletePerson = async function(id) {
+            if(confirm('هل أنت متأكد من الحذف؟')) {
+                await deleteDoc(doc(db, 'users', window.userId, 'people', id));
+                showToast('تم الحذف');
+            }
+        }
+
+        // --- Share & Screenshot Logic ---
+        let currentCanvas = null;
+        window.prepWhatsAppShare = function(userId) {
+            const user = window.users.find(u => u.id === userId);
             if(!user) return;
-            const type = document.querySelector('input[name="transType"]:checked').value;
-            const amount = parseFloat(document.getElementById('transAmount').value);
-            const note = document.getElementById('transNote').value;
             
-            user.transactions.push({ id: 'tx_'+Date.now(), type, amount, note, date: new Date().toISOString() });
-            
-            await setDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', user.id), user);
-            closeAllSheets();
-            showToast("تم تسجيل المعاملة");
-        };
-
-        window.confirmDelete = async function(id) {
-            if(confirm("هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع.")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', window.workspaceId, 'people', id));
-                showToast("تم الحذف بنجاح");
-            }
-        };
-
-        // Filters
-        window.setFilter = function(f) {
-            window.currentFilter = f;
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                b.classList.remove('bg-indigo-600', 'text-white');
-                b.classList.add('bg-slate-800', 'text-slate-400');
-            });
-            const active = document.getElementById('flt-'+f);
-            active.classList.add('bg-indigo-600', 'text-white');
-            active.classList.remove('bg-slate-800', 'text-slate-400');
-            renderUI();
-        };
-
-        window.filterUsers = renderUI;
-
-        // Render Dashboard
-        function renderUI() {
-            let totalInAll = 0, totalOutAll = 0;
-            const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
-            const list = document.getElementById('usersList'); list.innerHTML = '';
-            
-            let filtered = window.usersData.filter(u => u.name.toLowerCase().includes(query));
-
-            const usersWithNet = filtered.map(u => {
-                let uIn = 0, uOut = 0;
-                u.transactions.forEach(t => { if(t.type==='in') { uIn+=t.amount; totalInAll+=t.amount; } else { uOut+=t.amount; totalOutAll+=t.amount; } });
-                return { ...u, net: uIn - uOut, uIn, uOut };
-            }).sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            if(window.currentFilter === 'creditor') filtered = usersWithNet.filter(u => u.net > 0);
-            else if(window.currentFilter === 'debtor') filtered = usersWithNet.filter(u => u.net < 0);
-            else if(window.currentFilter === 'settled') filtered = usersWithNet.filter(u => u.net === 0);
-            else filtered = usersWithNet;
-
-            if(filtered.length === 0) {
-                list.innerHTML = `<div class="text-center text-slate-500 py-12"><div class="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-folder-open text-2xl"></i></div><p>لا توجد بيانات</p></div>`;
-            }
-
-            filtered.forEach(u => {
-                let statusBadge = u.net > 0 ? `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-lg text-xs font-bold">+ ${fmt(u.net)}</span>` :
-                                  u.net < 0 ? `<span class="bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-lg text-xs font-bold">- ${fmt(Math.abs(u.net))}</span>` :
-                                  `<span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg text-xs font-bold">مُخالص</span>`;
-
-                list.innerHTML += `
-                    <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800 shadow-sm relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-white font-black text-lg border border-slate-700">
-                                    ${u.name.substring(0,1)}
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-white text-base">${u.name}</h3>
-                                    <p class="text-[10px] text-slate-500">${u.transactions.length} معاملة مسجلة</p>
-                                </div>
-                            </div>
-                            ${statusBadge}
-                        </div>
-                        
-                        <div class="flex gap-2 relative z-10">
-                            <button onclick="openAddTrans('${u.id}', '${u.name}')" class="flex-1 bg-indigo-600 active:bg-indigo-700 text-white py-2 rounded-xl text-xs font-bold transition-transform active:scale-95"><i class="fa-solid fa-plus mr-1"></i> معاملة</button>
-                            <button onclick="openInvoice('${u.id}')" class="flex-1 bg-slate-800 active:bg-slate-700 text-white py-2 rounded-xl text-xs font-bold transition-transform active:scale-95"><i class="fa-solid fa-receipt mr-1"></i> كشف</button>
-                            <!-- WhatsApp Share Image Button -->
-                            <button onclick="shareUserSummary('${u.id}')" class="w-10 flex items-center justify-center bg-emerald-600/20 text-emerald-400 rounded-xl transition-transform active:scale-95"><i class="fa-brands fa-whatsapp text-lg"></i></button>
-                            <button onclick="confirmDelete('${u.id}')" class="w-10 flex items-center justify-center text-slate-600 active:text-rose-400 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>`;
-            });
-            
-            document.getElementById('totalIn').innerText = fmt(totalInAll);
-            document.getElementById('totalOut').innerText = fmt(totalOutAll);
-            const net = totalInAll - totalOutAll;
-            const balEl = document.getElementById('totalBalance');
-            balEl.innerText = fmt(Math.abs(net));
-            balEl.parentElement.className = `text-4xl font-black mb-4 flex items-baseline gap-1 ${net>0?'text-emerald-400':net<0?'text-rose-400':'text-white'}`;
-        }
-
-        function renderHistory() {
-            const list = document.getElementById('globalHistoryList'); list.innerHTML = '';
-            let allTx = [];
-            window.usersData.forEach(u => {
-                u.transactions.forEach(t => allTx.push({ ...t, userName: u.name }));
-            });
-            
-            if(allTx.length === 0) { list.innerHTML = '<div class="text-center text-slate-500 text-sm py-10">لا توجد معاملات بعد</div>'; return; }
-            
-            allTx.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tx => {
-                const color = tx.type === 'in' ? 'text-emerald-400' : 'text-rose-400';
-                const bg = tx.type === 'in' ? 'bg-emerald-500/20' : 'bg-rose-500/20';
-                const sign = tx.type === 'in' ? '+' : '-';
-                
-                list.innerHTML += `
-                    <div class="relative pl-10 py-3">
-                        <div class="absolute right-5 top-4 w-3 h-3 rounded-full ${bg} border-2 border-slate-900 z-10 translate-x-1/2"></div>
-                        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 mr-2 flex justify-between items-center">
-                            <div>
-                                <p class="text-xs text-slate-400 mb-0.5">${new Date(tx.date).toLocaleDateString('ar-EG', {month:'short', day:'numeric'})} • ${tx.userName}</p>
-                                <p class="text-sm text-white font-bold">${tx.note}</p>
-                            </div>
-                            <p class="${color} font-black text-sm" dir="ltr">${sign} ${fmt(tx.amount)}</p>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        // WhatsApp Share Image Logic
-        window.shareUserSummary = async function(id) {
-            const u = window.usersData.find(x => x.id === id); 
-            if(!u) return;
-            
-            showToast("جاري تجهيز الصورة...", "success");
-            
-            // Open the preview modal immediately
-            const previewModal = document.getElementById('imagePreviewModal');
-            const imgContainer = document.getElementById('generatedImageContainer');
-            const btnShare = document.getElementById('btnShareImage');
-            const btnDownload = document.getElementById('btnDownloadImage');
-            
-            imgContainer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-slate-400 text-3xl"></i>';
-            previewModal.classList.remove('hidden');
-            previewModal.classList.add('flex');
-
             let uIn = 0, uOut = 0;
-            u.transactions.forEach(t => { if(t.type==='in') uIn+=t.amount; else uOut+=t.amount; });
+            user.transactions.forEach(t => { if(t.type==='in') uIn+=t.amount; else uOut+=t.amount; });
             const net = uIn - uOut;
-            let statusText = net > 0 ? 'له' : net < 0 ? 'عليه' : 'مُخالص';
-            let color = net > 0 ? '#10b981' : net < 0 ? '#f43f5e' : '#64748b';
 
-            // Create hidden div for the image
-            const shareDiv = document.createElement('div');
-            shareDiv.style.position = 'absolute';
-            shareDiv.style.left = '-9999px';
-            shareDiv.style.top = '0';
-            shareDiv.style.width = '400px';
-            shareDiv.style.background = '#ffffff';
-            shareDiv.style.padding = '30px';
-            shareDiv.style.fontFamily = "'Cairo', sans-serif";
-            shareDiv.style.direction = 'rtl';
-            shareDiv.style.textAlign = 'right';
-            shareDiv.style.border = '1px solid #e2e8f0';
-            shareDiv.style.borderRadius = '20px';
+            document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('ar-EG');
+            document.getElementById('receiptName').innerText = user.name;
+            document.getElementById('receiptIn').innerText = uIn.toLocaleString();
+            document.getElementById('receiptOut').innerText = uOut.toLocaleString();
             
-            shareDiv.innerHTML = `
-                <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px;">
-                    <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 900;">كشف حساب مصغر</h2>
-                    <p style="color: #64748b; margin: 5px 0 0 0; font-size: 14px;">${new Date().toLocaleDateString('ar-EG')}</p>
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <p style="color: #64748b; margin: 0 0 5px 0; font-size: 14px;">العميل / الجهة:</p>
-                    <h3 style="color: #1e293b; margin: 0; font-size: 22px; font-weight: bold;">${u.name}</h3>
-                </div>
-                <div style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 20px;">
-                    <p style="color: #64748b; margin: 0 0 10px 0; font-size: 14px;">الرصيد النهائي</p>
-                    <h1 style="color: ${color}; margin: 0; font-size: 32px; font-weight: 900;" dir="ltr">${fmt(Math.abs(net))} <span style="font-size: 18px;">ج.م</span></h1>
-                    <p style="color: ${color}; margin: 5px 0 0 0; font-weight: bold; font-size: 16px;">${statusText}</p>
-                </div>
-                <div style="display: flex; justify-content: space-between; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-                    <div style="text-align: right;">
-                        <p style="color: #64748b; margin: 0 0 5px 0; font-size: 12px;">إجمالي الإيداع</p>
-                        <p style="color: #10b981; margin: 0; font-weight: bold; font-size: 16px;" dir="ltr">${fmt(uIn)}</p>
-                    </div>
-                    <div style="text-align: left;">
-                        <p style="color: #64748b; margin: 0 0 5px 0; font-size: 12px;">إجمالي السحب</p>
-                        <p style="color: #f43f5e; margin: 0; font-weight: bold; font-size: 16px;" dir="ltr">${fmt(uOut)}</p>
-                    </div>
-                </div>
-                <div style="margin-top: 25px; text-align: center;">
-                    <p style="color: #94a3b8; margin: 0; font-size: 11px;">تم الإنشاء بواسطة نظام المحاسبة</p>
-                </div>
-            `;
-            document.body.appendChild(shareDiv);
+            const netEl = document.getElementById('receiptNet');
+            if(net > 0) { netEl.innerText = net.toLocaleString() + ' له'; netEl.className = 'text-2xl font-black text-emerald-600'; }
+            else if(net < 0) { netEl.innerText = Math.abs(net).toLocaleString() + ' عليه'; netEl.className = 'text-2xl font-black text-rose-600'; }
+            else { netEl.innerText = '0 (مُخالص)'; netEl.className = 'text-2xl font-black text-slate-700'; }
 
-            try {
-                const canvas = await html2canvas(shareDiv, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-                canvas.toBlob(async (blob) => {
-                    const file = new File([blob], `كشف_حساب_${u.name.replace(/\s+/g, '_')}.png`, { type: 'image/png' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    // Show image in preview
-                    imgContainer.innerHTML = `<img src="${url}" class="w-full h-auto" alt="كشف حساب">`;
-
-                    // Setup Share button
-                    btnShare.onclick = async () => {
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            try {
-                                await navigator.share({
-                                    files: [file],
-                                    title: 'كشف حساب',
-                                    text: `مرحباً ${u.name}، إليك كشف حسابك المبسط.`
-                                });
-                            } catch(e) {
-                                console.log("Share cancelled or failed", e);
-                            }
-                        } else {
-                            showToast("المشاركة غير مدعومة في هذا التطبيق، قم بحفظ الصورة بدلاً من ذلك.", "error");
-                        }
-                    };
-
-                    // Setup Download button
-                    btnDownload.onclick = () => {
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = file.name;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        showToast("تم حفظ الصورة، يمكنك إرسالها الآن من الاستوديو", "success");
-                    };
-
-                    document.body.removeChild(shareDiv);
+            document.getElementById('shareModal').classList.remove('hidden');
+            document.getElementById('shareModal').classList.add('flex');
+            
+            // Render canvas immediately
+            setTimeout(() => {
+                html2canvas(document.getElementById('receiptToCapture'), { scale: 2 }).then(canvas => {
+                    currentCanvas = canvas;
                 });
-            } catch(e) {
-                console.error(e);
-                imgContainer.innerHTML = '<p class="text-rose-500 font-bold p-4">حدث خطأ أثناء التجهيز</p>';
-                showToast("حدث خطأ أثناء تجهيز الصورة", "error");
-                document.body.removeChild(shareDiv);
+            }, 300);
+        }
+
+        window.closeShareModal = function() {
+            document.getElementById('shareModal').classList.add('hidden');
+            document.getElementById('shareModal').classList.remove('flex');
+            currentCanvas = null;
+        }
+
+        window.downloadReceipt = function() {
+            if(currentCanvas) {
+                const link = document.createElement('a');
+                link.download = `كشف_${document.getElementById('receiptName').innerText}.png`;
+                link.href = currentCanvas.toDataURL();
+                link.click();
+                showToast('تم حفظ الصورة في هاتفك');
             }
-        };
+        }
 
-        window.closeImagePreview = function() {
-            const previewModal = document.getElementById('imagePreviewModal');
-            previewModal.classList.add('hidden');
-            previewModal.classList.remove('flex');
-            document.getElementById('generatedImageContainer').innerHTML = ''; // Clean up
-        };
-
-        // Invoice Logic
-        window.openInvoice = function(id) {
-            const u = window.usersData.find(x => x.id === id); if(!u) return;
-            document.getElementById('invName').innerText = u.name;
-            document.getElementById('invDate').innerText = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-            
-            let html = '', uIn = 0, uOut = 0;
-            const sorted = [...u.transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
-            
-            sorted.forEach(t => {
-                if(t.type==='in') uIn+=t.amount; else uOut+=t.amount;
-                html += `<tr class="border-b border-slate-200"><td class="p-2">${new Date(t.date).toLocaleDateString()}</td><td class="p-2 font-bold">${t.note}</td><td class="p-2 text-emerald-600" dir="ltr">${t.type==='in'?fmt(t.amount):'-'}</td><td class="p-2 text-rose-600" dir="ltr">${t.type==='out'?fmt(t.amount):'-'}</td></tr>`;
+        window.shareReceipt = async function() {
+            if(!currentCanvas) return;
+            currentCanvas.toBlob(async (blob) => {
+                const file = new File([blob], "receipt.png", { type: "image/png" });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'كشف حساب',
+                            text: 'تفاصيل الحساب من نظام المحاسبة'
+                        });
+                    } catch (error) { console.log('Share failed', error); downloadReceipt(); }
+                } else {
+                    // Fallback if sharing not supported in WebView
+                    downloadReceipt();
+                    alert("المشاركة المباشرة غير مدعومة هنا. تم حفظ الصورة، يمكنك إرسالها من الاستوديو.");
+                }
             });
-            
-            document.getElementById('invTbody').innerHTML = html || `<tr><td colspan="4" class="text-center p-4 text-slate-500">لا توجد معاملات مسجلة</td></tr>`;
-            document.getElementById('invIn').innerText = fmt(uIn); document.getElementById('invOut').innerText = fmt(uOut);
-            
-            const net = uIn - uOut, el = document.getElementById('invBal');
-            if(net > 0) { el.innerText = fmt(net) + ' له'; el.className = 'text-xl font-black text-emerald-600'; }
-            else if(net < 0) { el.innerText = fmt(Math.abs(net)) + ' عليه'; el.className = 'text-xl font-black text-rose-600'; }
-            else { el.innerText = '0'; el.className = 'text-xl font-bold text-slate-700'; }
-            
-            const modal = document.getElementById('invoiceModal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-            setTimeout(() => modal.classList.remove('translate-y-full'), 10);
-        };
+        }
 
-        window.closeInvoice = function() {
-            const modal = document.getElementById('invoiceModal');
-            modal.classList.add('translate-y-full');
-            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-        };
+        // --- Voice AI Logic (New API approach for WebViews) ---
+        // WebView doesn't support SpeechRecognition, so we would normally use MediaRecorder + Whisper API.
+        // For this frontend-only demo without backend API keys exposed, we will use a simulated voice prompt
+        // that asks the user to type the command if voice isn't available, but processes it with Gemini AI.
+        
+        window.startVoiceAssistant = function() {
+            const overlay = document.getElementById('voiceOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            // Check native support first
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(SpeechRec) {
+                const rec = new SpeechRec();
+                rec.lang = 'ar-EG';
+                rec.onresult = (e) => { processWithGemini(e.results[0][0].transcript); };
+                rec.onerror = () => { fallbackToTextAI(); };
+                try { rec.start(); } catch(e) { fallbackToTextAI(); }
+            } else {
+                fallbackToTextAI();
+            }
+        }
 
-        window.downloadInvoice = function() {
-            const el = document.getElementById('printableInvoice');
-            html2canvas(el, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
-                const a = document.createElement('a'); a.download = `كشف_${document.getElementById('invName').innerText}.png`;
-                a.href = canvas.toDataURL('image/png'); a.click();
-                showToast("تم حفظ كشف الحساب");
-            });
-        };
+        function fallbackToTextAI() {
+            document.getElementById('voiceText').innerHTML = "المايك غير مدعوم في هذا التطبيق.<br>اكتب المعاملة كأنك تتحدث (مثال: سجل 100 على أحمد)";
+            const input = prompt("اكتب المعاملة باللغة العامية:");
+            if(input) {
+                document.getElementById('voiceText').innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري تحليل: "${input}"`;
+                processWithGemini(input);
+            } else {
+                closeVoiceAssistant();
+            }
+        }
 
-        function fmt(num) { return Number(num).toLocaleString('en-US'); }
+        window.closeVoiceAssistant = function() {
+            const overlay = document.getElementById('voiceOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.getElementById('voiceText').innerHTML = 'أنا أستمع...';
+        }
+
+        async function processWithGemini(text) {
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    systemInstruction: { parts: [{ text: "أنت محاسب. استخرج: name, amount(رقم), type('in' إيداع/سداد/له, 'out' سحب/عليه/دين). ارجع JSON فقط." }] },
+                    generationConfig: { responseMimeType: "application/json" }
+                };
+                
+                // Using Canvas API key inherently in this environment, normally put key here
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_GEMINI_API_KEY_HERE`;
+                
+                // Mocking response for demo safety without exposing keys
+                // In production, fetch(apiUrl) is used.
+                setTimeout(() => {
+                    alert(`فهمت الجملة: ${text}\n(يجب إضافة مفتاح Gemini API في الكود لتعمل هذه الميزة بشكل حقيقي)`);
+                    closeVoiceAssistant();
+                }, 1000);
+
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ في التحليل");
+                closeVoiceAssistant();
+            }
+        }
+
+        // --- Helpers ---
+        window.openSheet = id => { document.getElementById(id).classList.remove('hidden'); setTimeout(()=>document.getElementById(id).querySelector('.bottom-sheet').classList.add('open'), 10); }
+        window.closeSheet = id => { document.getElementById(id).querySelector('.bottom-sheet').classList.remove('open'); setTimeout(()=>document.getElementById(id).classList.add('hidden'), 300); }
+        window.showToast = (msg, type='success') => {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
     </script>
 </body>
 </html>
